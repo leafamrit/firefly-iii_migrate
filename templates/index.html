@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <script type="text/javascript" src="{{ url_for('static', filename='main.js') }}"></script>
+        <title>firefly-iii migrate</title>
+    </head>
+    <body>
+        <input type="button" onclick="get_conn('src')" value="Source" {% if sess['src_oauth_token'] %} style="background-color: #0f0;" {% endif %} />
+        <input type="button" onclick="get_conn('snk')" value="Sink" {% if sess['snk_oauth_token'] %} style="background-color: #0f0;" {% endif %}/>
+        <br />
+        {% if data %}
+            {{ data }}
+        {% endif %}
+    </body>
+</html>
