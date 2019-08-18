@@ -3,11 +3,50 @@
     <head>
         <meta charset="utf-8">
         <script type="text/javascript" src="{{ url_for('static', filename='main.js') }}"></script>
+        {% if data %}
+            <script>
+                var data = document.createElement('textarea');
+                data.innerHTML = '{{ data }}';
+                data = JSON.parse(data.value);
+            </script>
+        {% endif %}
         <title>firefly-iii migrate</title>
     </head>
     <body>
-        <input type="button" onclick="get_conn('src')" value="Source" {% if sess['src_oauth_token'] %} style="background-color: #0f0;" {% endif %} />
-        <input type="button" onclick="get_conn('snk')" value="Sink" {% if sess['snk_oauth_token'] %} style="background-color: #0f0;" {% endif %}/>
+        <input type="button" onclick="get_conn('src')" value="Source"
+            {% if session and ("src_oauth_token" in session.keys()) %} style="background-color: #0f0;" {% endif %} />
+        <input type="button" onclick="get_conn('snk')" value="Sink"
+            {% if session and ("snk_oauth_token" in session.keys()) %} style="background-color: #0f0;" {% endif %}/>
+        <br />
+        {% if session and ("src_oauth_token" in session.keys()) and ("snk_oauth_token" in session.keys()) %}
+            <input type="button" onclick="get_data('src', 'accounts')" value="Get Source Accounts" />
+            <input type="button" onclick="get_data('snk', 'accounts')" value="Get Sink Accounts" />
+            <input type="button" onclick="import_data('accounts')" value="Import Accounts" />
+            <br />
+            <input type="button" onclick="get_data('src', 'bills')" value="Get Source Bills" />
+            <input type="button" onclick="get_data('snk', 'bills')" value="Get Sink Bills" />
+            <input type="button" onclick="import_data('bills')" value="Import Bills" />
+            <br />
+            <input type="button" onclick="get_data('src', 'budgets')" value="Get Source Budgets" />
+            <input type="button" onclick="get_data('snk', 'budgets')" value="Get Sink Budgets" />
+            <input type="button" onclick="import_data('budgets')" value="Import Budgets" />
+            <br />
+            <input type="button" onclick="get_data('src', 'categories')" value="Get Source Categories" />
+            <input type="button" onclick="get_data('snk', 'categories')" value="Get Sink Categories" />
+            <input type="button" onclick="import_data('categories')" value="Import Categories" />
+            <br />
+            <input type="button" onclick="get_data('src', 'rules')" value="Get Source Rules" />
+            <input type="button" onclick="get_data('snk', 'rules')" value="Get Sink Rules" />
+            <input type="button" onclick="import_data('rules')" value="Import Rules" />
+            <br />
+            <form id="file-form" action="" method="POST">
+                <input type="file" id="file-select" name="records" />
+                <button type="submit" id="upload-button" disabled>Upload</button>
+            </form>
+            <input type="button" onclick="import_data('transactions')" value="Import transactions" />
+            <br />
+            <script> initiate_uploader() </script>
+        {% endif %}
         <br />
         {% if data %}
             {{ data }}
