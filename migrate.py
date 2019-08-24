@@ -4,6 +4,7 @@ from flask import Flask, request, redirect, session, url_for, render_template
 from flask.json import jsonify
 from werkzeug import secure_filename
 from cred import src, snk
+import pandas as pd
 import json
 import os
 
@@ -42,7 +43,7 @@ def index():
     if data:
         return render_template("index.html", session=session, data=json.dumps(data))
     else:
-        return render_template("index.html", sess=session)
+        return render_template("index.html", session=session)
 
 @app.route('/get_connection/<target>')
 def get_connection(target):
@@ -126,6 +127,101 @@ def import_accounts():
             return redirect(url_for(".index"))
         else:
             return "bad request", 400
+    else:
+        return "bad request", 400
+
+@app.route('/import_transactions')
+def import_transactions():
+    transactions = pd.read_csv('./uploads/records.csv')
+    get_data("snk", "accounts")
+
+    if session and ("src_oauth_token" in session.keys()) and ("snk_oauth_token" in session.keys()):
+        firefly = OAuth2Session(snk["client_id"], token=session['snk_oauth_token'])
+        account_map = {}
+        headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        for account in data["snk"]["accounts"]["data"]:
+            account_map[account["attributes"]["name"]] = account["id"]
+
+        # Transfers
+        count = 0
+        total = transactions[transactions.transaction_type == "Transfer"].shape[0]
+        print("Total: :" + str(total))
+        for i in transactions[transactions.transaction_type == "Transfer"].iterrows():
+            request_body = {
+                "type": "transfer",
+                "description": i[1].description,
+                "date": str(i[1].date)[0:4] + "-" + str(i[1].date)[4:6] + "-" + str(i[1].date)[6:],
+                "transactions": [
+                    {
+                        "amount": i[1].amount,
+                        "category_name": i[1].category_name,
+                        "source_id": account_map[i[1].opposing_account_name],
+                        "destination_id": account_map[i[1].asset_account_name]
+                    }
+                ]
+            }
+
+            print(json.dumps(request_body))
+            print(firefly.post(snk["url"] + '/api/v1/transactions', data=json.dumps(request_body), headers=headers).content)
+            count = count + 1
+            print(str(count) + "/" + str(total))
+
+        print("all transfers imported")
+
+        # Withdrawals
+        count = 0
+        total = transactions[transactions.transaction_type == "Withdrawal"].shape[0]
+        print("Total: :" + str(total))
+        for i in transactions[transactions.transaction_type == "Withdrawal"].iterrows():
+            request_body = {
+                "type": "withdrawal",
+                "description": i[1].description,
+                "date": str(i[1].date)[0:4] + "-" + str(i[1].date)[4:6] + "-" + str(i[1].date)[6:],
+                "transactions": [
+                    {
+                        "amount": abs(i[1].amount),
+                        "category_name": i[1].category_name,
+                        "source_id": account_map[i[1].asset_account_name]
+                    }
+                ]
+            }
+
+            print(json.dumps(request_body))
+            print(firefly.post(snk["url"] + '/api/v1/transactions', data=json.dumps(request_body), headers=headers).content)
+            count = count + 1
+            print(str(count) + "/" + str(total))
+
+        print("all withdrawals imported")
+
+        # Deposits
+        count = 0
+        total = transactions[transactions.transaction_type == "Deposit"].shape[0]
+        print("Total: :" + str(total))
+        for i in transactions[transactions.transaction_type == "Deposit"].iterrows():
+            request_body = {
+                "type": "deposit",
+                "description": i[1].description,
+                "date": str(i[1].date)[0:4] + "-" + str(i[1].date)[4:6] + "-" + str(i[1].date)[6:],
+                "transactions": [
+                    {
+                        "amount": abs(i[1].amount),
+                        "category_name": i[1].category_name,
+                        "destination_id": account_map[i[1].asset_account_name]
+                    }
+                ]
+            }
+
+            print(json.dumps(request_body))
+            print(firefly.post(snk["url"] + '/api/v1/transactions', data=json.dumps(request_body), headers=headers).content)
+            count = count + 1
+            print(str(count) + "/" + str(total))
+
+        print("all deposits imported")
+
+        return redirect(url_for(".index"))
     else:
         return "bad request", 400
 
