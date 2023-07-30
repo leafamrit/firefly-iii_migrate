@@ -1,32 +1,115 @@
-// javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://raw.githubusercontent.com/Arkeyve/firefly-iii_migrate/master/formfill.js';})();
+function getJSON() {
+  // javascript:(function(){document.body.appendChild(document.createElement('script')).src='https://raw.githubusercontent.com/Arkeyve/firefly-iii_migrate/master/formfill.js';})();
 
-let inputstr = prompt("input");
-inputstr = inputstr.split("\t");
+  const api_url = "http://<firefly-base-url>/api/v1/transactions";
+  const auth_token = "<auth_token>";
 
-let category = "Misc.";
-let description = "Misc.";
-if(inputstr[2].indexOf("zepto") >= 0) { category = "Groceries"; description = "Zepto"; }
-if(inputstr[2].indexOf("paytm") >= 0) { category = "Snacks"; description = "Paytm"; }
-if(inputstr[2].indexOf("swiggy") >= 0) { category = "Food"; description = "Swiggy"; }
-if(inputstr[2].indexOf("DELOITTE") >= 0) { category = "Income"; description = "Deloitte"; }
-if(inputstr[2].indexOf("parvatkarmukesh") >= 0) { category = "Polo GT"; description = "Car Cleaning"; }
-if(inputstr[2].indexOf("CHANDRASEK") >= 0) { category = "Samarth Garden C/305"; description = "Rent"; }
-if(inputstr[2].indexOf("decathlon") >= 0) { category = "Shopping"; description = "Decathlon"; }
+  let inputstrArr = prompt("input");
+  // inputstrArr = inputstrArr.split("\r\n"); // windows
+  inputstrArr = inputstrArr.split("\n"); // linux
 
-document.querySelector("input[name='date[]']").value = inputstr[0].split("/").reverse().join("-");
-document.querySelector("input[name='description[]']").value = description;
-document.querySelector("input[name='amount[]']").value = inputstr[3] !== "0.0" ? Number(inputstr[3]) : Number(inputstr[4]);
+  inputstrArr.forEach((inputstr) => {
+    inputstr = inputstr.split("\t");
 
-document.querySelector("input[name='category[]']").value = category;
-document.querySelector("input[name='create_another']").checked ? undefined : document.querySelector("input[name='create_another']").click();
+    let category = "Misc.";
+    let description = "Misc.";
+    if (
+      inputstr[2].search(/zepto/i) >= 0 ||
+      inputstr[2].search(/dunzo/i) >= 0
+    ) {
+      category = "Groceries";
+      description = "Zepto";
+    }
+    if (inputstr[2].search(/paytm/i) >= 0) {
+      category = "Snacks";
+      description = "Paytm";
+    }
+    if (inputstr[2].search(/swiggy/i) >= 0) {
+      category = "Food";
+      description = "Swiggy";
+    }
+    if (inputstr[2].search(/DELOITTE/i) >= 0) {
+      category = "Income";
+      description = "Deloitte";
+    }
+    if (inputstr[2].search(/parvatkarmukesh/i) >= 0) {
+      category = "Polo GT";
+      description = "Car Cleaning";
+    }
+    if (inputstr[2].search(/CHANDRASEK/i) >= 0) {
+      category = "Samarth Garden C/305";
+      description = "Rent";
+    }
+    if (inputstr[2].search(/decathlon/i) >= 0) {
+      category = "Shopping";
+      description = "Decathlon";
+    }
+    if (inputstr[2].search(/tpslqr/i) >= 0) {
+      category = "Samarth Garden C/305";
+      description = "Electricity";
+    }
+    if (inputstr[2].search(/akshayamrit/i) >= 0) {
+      category = "Lending/Owing";
+      description = "Ishu Bhaiya";
+    }
+    if (inputstr[2].search(/atkare/i) >= 0) {
+      category = "Lending/Owing";
+      description = "Akash Atkare";
+    }
+    if (inputstr[2].search(/nehakalani/i) >= 0) {
+      category = "Lending/Owing";
+      description = "Neha";
+    }
+    if (inputstr[2].search(/uber/i) >= 0) {
+      category = "Commute";
+      description = "Uber";
+    }
+    if (inputstr[2].search(/airtelprepaidMu/i) >= 0) {
+      category = "Phone";
+      description = "Airtel";
+    }
 
-if ("createEvent" in document) {
-    var evt = document.createEvent("HTMLEvents");
-    evt.initEvent("change", false, true);
-    document.querySelector("input[name='description[]']").dispatchEvent(evt);
-    document.querySelector("input[name='amount[]']").dispatchEvent(evt);
-}
-else {
-    document.querySelector("input[name='description[]']").fireEvent("onchange");
-    document.querySelector("input[name='amount[]']").fireEvent("onchange");
+    let date = inputstr[0].split("/").reverse().join("-");
+    let amount = inputstr[3].trim();
+    let amountDep = inputstr[4].trim();
+
+    let transType = Number(amount) > 0 ? "withdrawal" : "deposit";
+
+    let requestObj = {
+      error_if_duplicate_hash: false,
+      apply_rules: true,
+      transactions: [
+        {
+          type: transType,
+          date: `${date}T00:00:00`,
+          amount: Number(amount) > 0 ? amount : amountDep,
+          description: description,
+          category_name: category,
+          source_name: Number(amount) > 0 ? "ICICI Anishabad" : null,
+          destination_name: Number(amountDep) > 0 ? "ICICI Anishabad" : null,
+        },
+      ],
+    };
+
+    // POST REQUEST
+    var data = JSON.stringify(requestObj);
+    
+    var xhr = new XMLHttpRequest();
+    xhr.withCredentials = true;
+    
+    xhr.addEventListener("readystatechange", function() {
+      if(this.readyState === 4) {
+        console.log(this.responseText);
+      }
+    });
+    
+    xhr.open("POST", api_url);
+    xhr.setRequestHeader("Authorization", auth_token);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    
+    xhr.send(data);
+
+    console.log(JSON.stringify(requestObj));
+    // navigator.clipboard.writeText(JSON.stringify(requestObj));
+  });
 }
